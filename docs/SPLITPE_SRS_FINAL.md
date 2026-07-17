@@ -43,7 +43,7 @@ SPLITPE is a polished, mobile-first expense-splitting experience for students li
 
 The delivered product is a single-page React application and a client-side prototype. Its central value proposition is clarity: **Split expenses. Not friendships.** It does not process payments, store household accounts, collect banking credentials, or depend on a backend.
 
-The implementation includes a responsive landing experience, an actual equal-split calculator, deterministic paise-level calculations, inline validation, explicit who-pays-whom results, honest privacy language, a custom SPLITPE brand mark, and a verified Vercel deployment.
+The implementation includes a responsive landing experience, equal, custom-amount, and itemised calculations, deterministic paise-level allocation, inline validation, explicit who-pays-whom results, copyable summaries, browser-local expense history, honest privacy language, a custom SPLITPE brand mark, and a verified Vercel deployment.
 
 ## 2. Problem Statement
 
@@ -59,7 +59,7 @@ Many existing tools expose more accounting complexity than a quick household spl
 |---|---|---|---|
 | OBJ-01 | Explain the product immediately | A phone visitor can identify the audience, problem, and primary action above the fold | Implemented |
 | OBJ-02 | Demonstrate the Add - Split - Settle flow | Three ordered steps use concise, consistent copy | Implemented |
-| OBJ-03 | Produce a correct equal split | Valid inputs generate shares that sum exactly to the entered total | Implemented |
+| OBJ-03 | Produce correct shared-expense splits | Equal, custom, and itemised shares sum exactly to the entered total | Implemented |
 | OBJ-04 | Make settlement direction explicit | One plain-language sentence is shown for every non-payer | Implemented |
 | OBJ-05 | Prevent misleading output | Invalid amount or participant data replaces the result with a correction state | Implemented |
 | OBJ-06 | Work across mobile and desktop | No horizontal overflow at 320, 390, or 1440 pixel verification widths | Implemented |
@@ -71,8 +71,8 @@ Many existing tools expose more accounting complexity than a quick household spl
 - Real UPI transfers, payment collection, wallet functionality, or transaction status.
 - Authentication, user profiles, household membership, invitations, or cross-device sync.
 - Backend APIs, databases, analytics, trackers, or cloud storage.
-- Unequal, weighted, percentage, or itemised split modes.
-- Expense history, recurring bills, reminders, notifications, or administrative dashboards.
+- Weighted or percentage-based split modes.
+- Cross-device expense history, recurring bills, reminders, notifications, or administrative dashboards.
 - Claims of bank-grade encryption, regulatory approval, or financial institution status.
 
 These items are **Not applicable** to the delivered prototype and are not represented as completed features.
@@ -120,6 +120,10 @@ A college student living with two to five flatmates who occasionally pays a shar
 - Inline amount and participant validation.
 - Deterministic integer-paise remainder handling.
 - Invalid-result state that suppresses misleading settlement values.
+- Custom-amount splitting with exact-total validation.
+- Itemised splitting with per-item participant selection.
+- Clipboard-ready settlement summaries with success or failure feedback.
+- Up to 20 saved expense snapshots in browser localStorage, with restore, copy, and delete controls.
 - Reduced-motion behaviour.
 - Custom vector SPLITPE brand mark and matching SVG favicon.
 
@@ -127,12 +131,9 @@ A college student living with two to five flatmates who occasionally pays a shar
 
 | Original item | Status | As-built decision |
 |---|---|---|
-| Copy result to clipboard | Deferred | No copy control or toast was added |
-| Web Share API with clipboard fallback | Deferred | No share action was added |
-| Persist latest inputs in localStorage | Deferred | State remains in React memory and resets on refresh |
+| Web Share API | Deferred | Clipboard copy is implemented; native share-sheet integration is not |
 | Authentication and shared households | Deferred | Future production scope |
-| Persistent expense history | Deferred | Requires a backend and account model |
-| Unequal or itemised splits | Deferred | Equal split is the only delivered mode |
+| Cross-device expense history | Deferred | Current history is device-local and intentionally requires no account |
 | UPI settlement intent/deep link | Deferred | The app describes settlement intent but does not initiate payment |
 | Reminders and notifications | Deferred | Future household workflow |
 | Offline/PWA support | Deferred | Static web delivery only |
@@ -145,11 +146,12 @@ Authentication, databases, payment APIs, routing, analytics, dashboards, dark mo
 
 1. The final header uses a custom equal-share vector mark instead of the originally suggested small rupee mark. The mark is implemented in BrandMark.jsx and mirrored in public/favicon.svg.
 2. The amount parser accepts any positive value representable in paise, starting at ₹0.01. The original SRS stated a ₹1 minimum, so that specific lower-bound requirement is **Partially implemented**.
-3. Copy/share functionality was not attempted and is **Deferred**.
-4. localStorage persistence was not implemented. Calculator entries stay in in-memory React state during the active page session and reset to default data after refresh.
-5. Reduced-motion support, originally listed as optional P2, was implemented in the final CSS.
-6. The finished application includes an SVG favicon and reusable brand component beyond the original component list.
-7. No automated testing framework was added. Verification used direct utility execution, source inspection, live computed browser checks, production build validation, and deployment reachability.
+3. Clipboard copy was added for both the active result and saved history entries; native Web Share remains deferred.
+4. A schema-checked localStorage history now retains up to 20 complete calculator snapshots and supports restore and deletion.
+5. Custom-amount and itemised split modes were added while retaining equal split as the default.
+6. Reduced-motion support, originally listed as optional P2, was implemented in the final CSS.
+7. The finished application includes an SVG favicon and reusable brand component beyond the original component list.
+8. Focused Node tests now cover paise allocation, custom totals, itemised allocation, share text, and history storage safety.
 
 ## 6. User Stories
 
@@ -161,8 +163,8 @@ Authentication, databases, payment APIs, routing, analytics, dashboards, dark mo
 | US-04 | As a participant, I want plain-language results so I do not have to interpret a ledger | Each non-payer receives an explicit settlement sentence | Implemented |
 | US-05 | As a cautious user, I want to know whether bank details are collected or payments are processed | Trust section states both boundaries directly | Implemented |
 | US-06 | As a mobile user, I want large controls and a vertical flow without sideways scrolling | Live checks confirm 44 pixel targets and no horizontal overflow at 320 and 390 pixels | Implemented |
-| US-07 | As a returning user, I want my previous split restored | No persistence exists after refresh | Deferred |
-| US-08 | As a user, I want to copy or share the settlement summary | No copy or share control exists | Deferred |
+| US-07 | As a returning user, I want my previous split restored | Saved browser-local history survives refresh and can restore a snapshot | Implemented |
+| US-08 | As a user, I want to copy the settlement summary | Copy controls provide success or failure feedback | Implemented |
 
 ## 7. Information Architecture
 
@@ -223,13 +225,13 @@ Navigation uses native anchors for the top, how-it-works, and calculator section
 - **Validation and edge cases:** Empty, zero, negative, over-limit, and over-precision amounts are rejected. Participant names are trimmed, required, and unique without case sensitivity. No alert dialog is used.
 - **Actual status:** **Implemented** in parseAmountToPaise, validateParticipants, and InvalidResult.
 
-### FR-06 Equal-Split Calculation
+### FR-06 Split Calculation
 
-- **Description:** Divide the total equally using integer paise.
-- **Inputs:** Valid total paise, ordered participants, and payer ID.
-- **Expected behaviour:** Each participant receives the base share plus one paise for the first remainder positions. Assigned shares sum exactly to the original total.
-- **Validation and edge cases:** The payer falls back to the first participant if an unknown payer ID reaches the utility.
-- **Actual status:** **Implemented** in splitEvenly.
+- **Description:** Calculate equal, custom-amount, or itemised shares using integer paise.
+- **Inputs:** Valid total or item amounts, ordered participants, payer ID, split method, custom shares, and item participant selections.
+- **Expected behaviour:** Equal and per-item allocations distribute remainder paise deterministically. Custom shares must total the expense exactly. Assigned shares always equal the original total.
+- **Validation and edge cases:** Item lines require a name, positive amount, and at least one participant. The payer falls back to the first participant if an unknown payer ID reaches the utility.
+- **Actual status:** **Implemented** in splitEvenly, validateCustomShares, calculateItemisedSplit, and splitWithShares.
 
 ### FR-07 Settlement Result
 
@@ -239,21 +241,21 @@ Navigation uses native anchors for the top, how-it-works, and calculator section
 - **Validation and edge cases:** A share range is shown when remainder paise make participant shares differ by one paise. Long names may wrap inside settlement rows.
 - **Actual status:** **Implemented** in ValidResult and formatPerPersonShare.
 
-### FR-08 Copy and Share
+### FR-08 Copy Result
 
 - **Description:** Copy or share a plain-text settlement summary.
 - **Inputs:** Valid calculated result.
-- **Expected behaviour:** Original P2 concept proposed Web Share with clipboard fallback and success feedback.
-- **Validation and edge cases:** Failure should not affect the calculator.
-- **Actual status:** **Deferred**. No copy, share, or toast control exists.
+- **Expected behaviour:** Copy the current or saved settlement through the Clipboard API, with a legacy browser fallback and visible feedback.
+- **Validation and edge cases:** Failure does not affect the calculator; native Web Share is not implemented.
+- **Actual status:** **Implemented** in copyToClipboard, SplitCalculator, and HistoryPanel.
 
-### FR-09 Local Persistence
+### FR-09 Local Persistence and History
 
-- **Description:** Restore the latest calculator input after refresh.
-- **Inputs:** Expense, amount, participants, and payer.
-- **Expected behaviour:** Original P2 concept proposed localStorage.
-- **Validation and edge cases:** Stored data would require schema validation and safe fallback.
-- **Actual status:** **Deferred**. React state is in-memory only and refresh restores default demo data.
+- **Description:** Save and restore complete valid calculator snapshots in the current browser.
+- **Inputs:** Expense, split method, amount or items, participants, custom shares, payer, settlement text, and save time.
+- **Expected behaviour:** Keep the 20 most recent entries; allow restore, copy, and individual deletion after refresh.
+- **Validation and edge cases:** Malformed storage safely resolves to an empty history. Storage failure does not break calculation.
+- **Actual status:** **Implemented** in history.js, SplitCalculator, and HistoryPanel.
 
 ## 9. Calculation Logic
 
@@ -281,6 +283,8 @@ remainder = totalPaise mod n
 8. Generate one settlement sentence for each non-payer using that participant's assigned share.
 9. Calculate receivablePaise as totalPaise minus the payer's assigned share.
 10. Format values with Intl.NumberFormat using locale en-IN and currency INR.
+
+For a custom split, each entered share is parsed independently into paise and the result remains invalid until the exact assigned total equals the bill total. For an itemised split, every line is parsed into paise and divided only among its selected participants using the same deterministic base-share and remainder rule. Per-person item shares are accumulated before settlement generation.
 
 ### 9.2 Verified Default Example
 
@@ -371,7 +375,7 @@ Smooth anchor scrolling and CSS transitions provide restrained motion. Under pre
 
 ### 10.8 Applied Interaction Laws
 
-- **Hick's Law:** only equal split is offered; default data prevents an empty state; the hero exposes one dominant primary action.
+- **Hick's Law:** three clearly labelled split methods use progressive disclosure, equal remains the default, and the hero exposes one dominant primary action.
 - **Fitts's Law:** visible interactive elements measured at 320, 390, and 1440 pixels meet the 44 by 44 pixel minimum; mobile gutters keep controls away from screen edges.
 - **Jakob's Law:** familiar anchors, filled and outlined buttons, labels above fields, inline errors, native select behaviour, and conventional vertical scrolling require no explanation.
 
@@ -434,10 +438,11 @@ SPLITPE is a prototype.
 - It does not collect bank details or UPI credentials.
 - It does not claim bank-grade encryption, regulatory approval, or bank status.
 - It does not use authentication, a database, a backend API, analytics, or tracking.
-- Calculator state is held in React memory inside the browser.
-- No localStorage or sessionStorage persistence is implemented.
-- Refreshing the page restores the default demonstration data.
-- The trust phrase Your entries stay in this browser describes client-side processing, not durable local storage.
+- Active calculator state is held in React memory inside the browser.
+- Saved expense snapshots are stored in browser localStorage under a versioned SPLITPE key.
+- Up to 20 valid snapshots persist across refresh and can be restored or individually deleted.
+- Malformed or unavailable storage safely falls back to an empty history.
+- No calculator or history data is sent to a backend.
 
 ## 14. Technical Architecture
 
@@ -465,15 +470,18 @@ React components and SplitCalculator state
       |
       v
 src/utils/split.js
-parsing -> validation -> equal split -> INR formatting
+parsing -> validation -> equal/custom/itemised split -> INR formatting
       |
       v
 Browser-rendered result
+      |
+      v
+src/utils/history.js -> browser localStorage
 
-No local storage, backend, database, authentication, or payment API
+No backend, database, authentication, cloud sync, or payment API
 ~~~
 
-App.jsx composes the single page. SplitCalculator.jsx owns state and derives the current calculation with useMemo. split.js contains pure functions for amount parsing, participant validation, deterministic splitting, and currency presentation.
+App.jsx composes the single page. SplitCalculator.jsx owns active state and derives the current calculation with useMemo. split.js contains pure functions for amount parsing, participant validation, deterministic split modes, settlement text, and currency presentation. history.js validates and safely reads or writes localStorage history; HistoryPanel.jsx renders its controls.
 
 ## 15. Component and File Structure
 
@@ -485,10 +493,14 @@ src/
     Hero.jsx
     HowItWorks.jsx
     SplitCalculator.jsx
+    HistoryPanel.jsx
     TrustStrip.jsx
     Footer.jsx
   utils/
     split.js
+    history.js
+    split.test.js
+    history.test.js
   App.jsx
   main.jsx
   index.css
@@ -506,10 +518,13 @@ package.json
 | BrandMark.jsx | Reusable inline vector logo mark |
 | Hero.jsx | Product promise, CTAs, and example split preview |
 | HowItWorks.jsx | Ordered Add - Split - Settle sequence |
-| SplitCalculator.jsx | Local state, participant controls, validation presentation, and result UI |
+| SplitCalculator.jsx | Split-mode state, participant and item controls, clipboard actions, history snapshots, validation, and result UI |
+| HistoryPanel.jsx | Browser-local history list with restore, copy, and delete controls |
 | TrustStrip.jsx | Client-side and payment-boundary messaging |
 | Footer.jsx | Final calculator CTA and minimal product footer |
-| split.js | Amount parsing, validation, integer-paise split, and INR formatting |
+| split.js | Amount parsing, validation, equal/custom/itemised paise logic, settlement text, and INR formatting |
+| history.js | Versioned localStorage reads, writes, validation, ordering, and 20-entry cap |
+| split.test.js and history.test.js | Focused Node tests for calculation and storage behaviour |
 | index.css | Tokens, responsive layout, components, states, focus, and reduced motion |
 | main.jsx | React DOM entry point and StrictMode wrapper |
 | public/favicon.svg | Standalone browser icon matching the brand mark |
@@ -524,24 +539,24 @@ package.json
 | P0-04 | Honest trust strip | P0 | Implemented | TrustStrip.jsx | Source inspection |
 | P0-05 | Mobile-first responsiveness | P0 | Implemented | index.css | Live computed checks at 320 and 390 |
 | P0-06 | Single live URL | P0 | Implemented | Vercel deployment | HTTP 200 check |
-| P1-01 | Live equal-split calculator | P1 | Implemented | SplitCalculator.jsx | Source and utility execution |
+| P1-01 | Live multi-mode split calculator | P1 | Implemented | SplitCalculator.jsx | Source, utility tests, and browser interaction |
 | P1-02 | Instant result updates | P1 | Implemented | useMemo in SplitCalculator.jsx | Source inspection |
 | P1-03 | Validation | P1 | Implemented | parseAmountToPaise and validateParticipants | Direct utility execution |
 | P1-04 | Interaction polish | P1 | Implemented | anchors and index.css states | Source and live visual inspection |
 | P1-05 | Accessible controls | P1 | Implemented | labels, native controls, CSS focus | DOM and source checks |
-| P2-01 | Copy result | P2 | Deferred | No component present | Repository search |
+| P2-01 | Copy result | P2 | Implemented | copyToClipboard and result/history actions | Clipboard-permitted browser check |
 | P2-02 | Web share | P2 | Deferred | No component present | Repository search |
-| P2-03 | Local persistence | P2 | Deferred | No storage calls present | Repository search |
+| P2-03 | Local persistence | P2 | Implemented | history.js and HistoryPanel.jsx | Unit test and reload check |
 | P2-04 | Reduced motion | P2 | Implemented | index.css media query | Source inspection |
 | FR-01 | Navigation and section scrolling | P0 | Implemented | Header.jsx, Hero.jsx, Footer.jsx | Anchor target inspection |
 | FR-02 | Expense label and amount | P1 | Partially implemented | SplitCalculator.jsx, parseAmountToPaise | Source and direct utility execution |
 | FR-03 | Participant management | P1 | Implemented | SplitCalculator.jsx | Source state-handler inspection |
 | FR-04 | Payer selection | P1 | Implemented | SplitCalculator.jsx | Direct split execution with changed payer |
 | FR-05 | Inline validation | P1 | Implemented | SplitCalculator.jsx and split.js | Direct invalid-input execution |
-| FR-06 | Integer-paise equal split | P1 | Implemented | splitEvenly | Default and remainder tests |
+| FR-06 | Integer-paise split modes | P1 | Implemented | splitEvenly, validateCustomShares, calculateItemisedSplit | Unit tests |
 | FR-07 | Settlement result | P1 | Implemented | ValidResult | Source and default test |
-| FR-08 | Copy/share | P2 | Deferred | No implementation | Repository search |
-| FR-09 | Local persistence | P2 | Deferred | In-memory state only | Repository search |
+| FR-08 | Copy result | P2 | Implemented | copyToClipboard, ValidResult, HistoryPanel | Browser clipboard check |
+| FR-09 | Local persistence and history | P2 | Implemented | history.js, HistoryPanel | Unit test and browser reload |
 | A11Y-01 | Semantic and labelled controls | P1 | Implemented | App.jsx and SplitCalculator.jsx | DOM and source checks |
 | A11Y-02 | Live result announcement | P1 | Implemented | aria-live result panel | Source inspection |
 | A11Y-03 | Reduced motion | P2 | Implemented | index.css | Source inspection |
@@ -549,7 +564,7 @@ package.json
 | NFR-02 | No runtime secrets or backend | P0 | Implemented | Static repository | Package and source inspection |
 | NG-01 | Real payment processing | Non-goal | Not applicable | Explicit trust copy | Source inspection |
 | NG-02 | Authentication and accounts | Non-goal | Not applicable | No dependencies or UI | Package and source inspection |
-| NG-03 | Unequal or itemised split | Non-goal | Not applicable | Equal split only | Source inspection |
+| NG-03 | Real payment processing | Non-goal | Not applicable | No payment integration | Source inspection |
 
 ## 17. Testing and Acceptance Criteria
 
@@ -559,6 +574,8 @@ Testing evidence in this final specification distinguishes direct execution, liv
 |---|---|---|---|
 | Default ₹2,400 split by four | ₹600.00 each and three settlement rows | Direct execution of splitEvenly | Passed |
 | ₹1,000 split by three | 33,334 + 33,333 + 33,333 paise = 100,000 | Direct execution of splitEvenly | Passed |
+| Custom ₹2,400 split | Entered shares must sum to exactly 240,000 paise | Node test and live browser interaction | Passed |
+| Itemised allocation | Each line is allocated only to its selected people and totals remain exact | Node test and live browser interaction | Passed |
 | Payer changes to Riya | All non-payers pay Riya | Direct execution generated three updated sentences | Passed |
 | Add and remove participant | List changes within boundaries | addParticipant and removeParticipant source inspection | Verified |
 | Remove selected payer | First remaining participant becomes payer | removeParticipant source inspection | Verified |
@@ -572,6 +589,8 @@ Testing evidence in this final specification distinguishes direct execution, liv
 | Keyboard and focus behaviour | Native DOM order and visible focus CSS | Source inspection; full manual Tab traversal not repeated | Partially verified |
 | Production build | Vite build completes and writes dist | npm run build on 17 July 2026 | Passed |
 | Live deployment | Production endpoint is reachable | HTTP 200 and live screenshots | Passed |
+| Clipboard result | Valid settlement copies with browser clipboard permission | Headless Chrome permission-enabled check | Passed |
+| Local history reload | Saved entry remains after page reload | Unit test and headless Chrome reload | Passed |
 
 ### Not Independently Verified
 
@@ -579,7 +598,7 @@ Testing evidence in this final specification distinguishes direct execution, liv
 - Dedicated screen-reader testing.
 - Safari, Firefox, and Edge test matrix.
 - Zoom at 200 percent.
-- Automated end-to-end interaction tests.
+- A maintained automated end-to-end browser test suite; focused scripted browser checks were run for this release.
 - Vercel behaviour from multiple geographic regions.
 
 These items are not represented as passed.
@@ -607,8 +626,8 @@ The final production build completed successfully with Vite 6.4.3, and the deplo
 The following capabilities are realistic extensions but are not part of the completed prototype:
 
 1. **Authentication and shared households:** accounts, invitations, member roles, and cross-device access.
-2. **Persistent expense history:** durable records, edits, balances, and household timelines.
-3. **Unequal and itemised splits:** percentages, shares, custom amounts, and receipt items.
+2. **Synced expense history:** accounts, cross-device records, edits, balances, and household timelines.
+3. **Advanced split rules:** percentages, weights, quantities, receipt scanning, and per-item payer assignment.
 4. **UPI settlement intent:** compliant deep links or QR handoff without misrepresenting payment processing.
 5. **Reminders:** opt-in settlement prompts and status tracking.
 6. **Offline/PWA support:** installability, cached shell, and queued local changes.
@@ -617,6 +636,6 @@ Any production expansion would require a separate privacy, security, data-retent
 
 ## 20. Conclusion
 
-SPLITPE delivers the intended internship outcome: a coherent, deployed, mobile-first fintech prototype that explains a real student problem and solves its core calculation task. The final application provides an accurate equal split, explicit settlement guidance, robust validation, accessible interaction patterns, and honest scope boundaries without introducing unnecessary infrastructure.
+SPLITPE delivers the intended internship outcome: a coherent, deployed, mobile-first fintech prototype that explains a real student problem and solves its core calculation task. The final application provides exact equal, custom, and itemised splits, copyable settlement guidance, browser-local history, robust validation, accessible interaction patterns, and honest scope boundaries without introducing unnecessary infrastructure.
 
 The as-built result is intentionally focused. It demonstrates product thinking, interface design, responsive implementation, deterministic financial calculation, and release discipline while clearly separating delivered capability from future product scope.

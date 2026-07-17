@@ -3,7 +3,7 @@ import { Landmark, LockKeyhole, MonitorCheck } from 'lucide-react'
 const trustItems = [
   { label: 'Made for UPI settlements', Icon: Landmark },
   { label: 'No bank details collected', Icon: LockKeyhole },
-  { label: 'Your entries stay in this browser', Icon: MonitorCheck },
+  { label: 'Saved expenses stay in this browser', Icon: MonitorCheck },
 ]
 
 export default function TrustStrip() {
