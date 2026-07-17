@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "node --test",
+    "verify:flat302": "node scripts/verify-flat302.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

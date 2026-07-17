@@ -7,6 +7,13 @@ const INR_FORMATTER = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 2,
 })
 
+const INR_COMPACT_FORMATTER = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
+
 export const SPLIT_METHOD_LABELS = {
   equal: 'Equal split',
   custom: 'Custom amounts',
@@ -15,6 +22,10 @@ export const SPLIT_METHOD_LABELS = {
 
 export function formatPaise(paise) {
   return INR_FORMATTER.format(paise / 100)
+}
+
+export function formatPaiseCompact(paise) {
+  return INR_COMPACT_FORMATTER.format(paise / 100)
 }
 
 function parseDecimalToPaise(value, { allowZero = false, emptyMessage = 'Enter an amount.' } = {}) {
