@@ -1,4 +1,5 @@
 import { ArrowUpRight } from 'lucide-react'
+import BrandMark from './BrandMark'
 
 export default function Footer() {
   return (
@@ -14,7 +15,12 @@ export default function Footer() {
         </a>
       </div>
       <div className="page-shell footer-bottom">
-        <a className="wordmark wordmark-light focus-ring" href="#top" aria-label="Back to top">SPLIT<span>PE</span></a>
+        <a className="wordmark wordmark-light focus-ring" href="#top" aria-label="Back to top">
+          <BrandMark />
+          <span className="wordmark-text">
+            SPLIT<span className="wordmark-accent">PE</span>
+          </span>
+        </a>
         <p>SPLITPE · Built for shared living.</p>
       </div>
     </footer>

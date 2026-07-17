@@ -131,6 +131,7 @@ button:disabled {
 .wordmark {
   display: inline-flex;
   align-items: center;
+  gap: 9px;
   min-height: 44px;
   border-radius: 8px;
   font-size: 1.05rem;
@@ -138,7 +139,29 @@ button:disabled {
   letter-spacing: -0.04em;
 }
 
-.wordmark span {
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.brand-mark-background {
+  fill: var(--ink);
+}
+
+.brand-mark-share-top {
+  fill: white;
+}
+
+.brand-mark-share-bottom {
+  fill: var(--mint);
+}
+
+.wordmark-text {
+  display: inline-flex;
+}
+
+.wordmark-accent {
   color: var(--mint-dark);
 }
 
@@ -957,7 +980,19 @@ h1 {
   border-top: 1px solid rgba(221, 229, 236, 0.16);
 }
 
-.wordmark-light span {
+.wordmark-light .brand-mark-background {
+  fill: white;
+}
+
+.wordmark-light .brand-mark-share-top {
+  fill: var(--ink);
+}
+
+.wordmark-light .brand-mark-share-bottom {
+  fill: var(--mint-dark);
+}
+
+.wordmark-light .wordmark-accent {
   color: #85e2b5;
 }
 
